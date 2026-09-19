@@ -41,8 +41,12 @@ jobs:
           mkdir -p compat-artifacts
           uv pip freeze --python .venv-compat/bin/python > compat-artifacts/dependencies.txt
           git -C aiperf-host rev-parse HEAD > compat-artifacts/host-sha.txt
-      - name: Plugin unit tests and real registry/model integration
+      - name: Install browser for actual report interaction tests
+        run: .venv-compat/bin/python -m playwright install --with-deps chromium
+      - name: Plugin tests, browser and real registry/model integration
         working-directory: plugin-source/plugins/sglang-metrics
+        env:
+          AIPERF_SGLANG_BROWSER_TESTS: '1'
         run: ../../../.venv-compat/bin/python -m pytest -q --junitxml=../../../compat-artifacts/unit-tests.xml
       - name: Real AIPerf main flow with SSE and P/D Prometheus endpoints
         run: .venv-compat/bin/python plugin-source/plugins/sglang-metrics/tools/compat_smoke.py --output compat-artifacts/main-flow

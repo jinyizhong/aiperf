@@ -1,4 +1,4 @@
 # SPDX-License-Identifier: Apache-2.0
-"""Optional AIPerf exporters; no registration side effects at import time."""
+"""SGLang P/D visibility via an optional AIPerf exporter."""
 
-__version__ = "0.1.0"
+__version__ = "0.2.0"

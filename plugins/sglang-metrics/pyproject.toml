@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "aiperf-sglang-metrics"
-version = "0.1.0"
+version = "0.2.0"
 description = "Experiment-scoped SGLang P/D, transfer and KV-cache reports for AIPerf"
 requires-python = ">=3.11,<3.14"
 license = "Apache-2.0"

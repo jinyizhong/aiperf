@@ -1,1 +1,3 @@
-include examples/*.yaml
+include README.md
+include README.zh-CN.md
+recursive-include examples *.yaml
