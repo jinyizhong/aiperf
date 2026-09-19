@@ -1,0 +1,55 @@
+# SPDX-License-Identifier: Apache-2.0
+name: SGLang metrics plugin compatibility
+on:
+  push:
+    branches: [feature/sglang-metrics]
+    paths: ['plugins/sglang-metrics/**', '.github/workflows/sglang-metrics-compat.yml']
+  pull_request:
+    paths: ['plugins/sglang-metrics/**', '.github/workflows/sglang-metrics-compat.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  compatibility:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        host:
+          - name: main
+            ref: 23a63a493604bc4016388543316934afa35e1c56
+          - name: v0.12.0
+            ref: be53bf2953d30e46c500e6a80fc1f8b6f84bc718
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: plugin-source
+      - uses: actions/checkout@v4
+        with:
+          repository: jinyizhong/aiperf
+          ref: ${{ matrix.host.ref }}
+          path: aiperf-host
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: astral-sh/setup-uv@v6
+      - name: Install actual pinned host and plugin (no runtime doubles)
+        run: |
+          uv venv .venv-compat --python 3.12
+          uv pip install --python .venv-compat/bin/python -e ./aiperf-host -e './plugin-source/plugins/sglang-metrics[test]'
+          mkdir -p compat-artifacts
+          uv pip freeze --python .venv-compat/bin/python > compat-artifacts/dependencies.txt
+          git -C aiperf-host rev-parse HEAD > compat-artifacts/host-sha.txt
+      - name: Plugin unit tests and real registry/model integration
+        working-directory: plugin-source/plugins/sglang-metrics
+        run: ../../../.venv-compat/bin/python -m pytest -q --junitxml=../../../compat-artifacts/unit-tests.xml
+      - name: Real AIPerf main flow with SSE and P/D Prometheus endpoints
+        run: .venv-compat/bin/python plugin-source/plugins/sglang-metrics/tools/compat_smoke.py --output compat-artifacts/main-flow
+      - name: Preserve logs, reports, host SHA and environment
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sglang-metrics-${{ matrix.host.name }}
+          path: compat-artifacts
+          if-no-files-found: warn
