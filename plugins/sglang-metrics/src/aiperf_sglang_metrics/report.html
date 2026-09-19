@@ -1,0 +1,404 @@
+<!doctype html>
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:; connect-src 'none'; font-src 'none'; base-uri 'none'; form-action 'none'">
+<title>SGLang · Experiment Metrics</title>
+<style>
+:root{--bg:#f7f8f5;--panel:#fff;--ink:#1c2520;--muted:#728077;--line:#e0e6df;--accent:#3b624c;--shadow:0 4px 18px #25372b06}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:14px -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+body.dark{--bg:#141b17;--panel:#1c2520;--ink:#e5eee7;--muted:#9aa99d;--line:#334237;--accent:#a8c9ad}
+button,input,select{font:inherit;color:inherit}
+button,select{background:var(--panel);border:1px solid var(--line);border-radius:7px;padding:7px 10px;cursor:pointer}
+button:hover{border-color:var(--accent)}
+button.on{background:var(--accent);color:var(--panel)}
+header{height:68px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;padding:0 30px;background:var(--panel)}
+.brand{font-size:18px;font-weight:650;letter-spacing:-.5px}
+.brand span{font-weight:400;color:var(--muted);margin-left:12px}
+.nav{display:flex;align-items:center;gap:18px}
+.badge{font:11px ui-monospace,monospace;letter-spacing:1px;color:var(--accent);border:1px solid var(--line);padding:6px 10px;border-radius:20px}
+.layout{display:grid;grid-template-columns:212px 1fr;min-height:calc(100vh - 68px)}
+aside{border-right:1px solid var(--line);padding:28px 18px;position:sticky;top:0;height:100vh}
+.eyebrow{font-size:11px;color:var(--muted);letter-spacing:1.5px;text-transform:uppercase}
+.side-title{margin:20px 10px 12px;color:var(--muted);font-size:12px}
+.category{display:flex;justify-content:space-between;width:100%;margin:4px 0;padding:11px 12px;border:0;background:none;text-align:left}
+.category.active{background:#e7eee6;color:#294533;font-weight:600}
+.category small{font-variant-numeric:tabular-nums;opacity:.6}
+.side-note{color:var(--muted);font-size:12px;line-height:1.8;padding:20px 10px}
+.main{padding:28px 32px 42px;min-width:0;max-width:1800px}
+.heading{display:flex;align-items:flex-start;justify-content:space-between;gap:20px}
+.heading>div{min-width:0}
+h1{overflow-wrap:anywhere;font-size:26px;font-weight:600;letter-spacing:-.5px;margin:8px 0}
+#subtitle{color:var(--muted);line-height:1.6;font-size:12px;overflow-wrap:anywhere}
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin:23px 0}
+.kpi{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:16px 20px}
+.kpi .n{font:28px ui-monospace,monospace;margin-bottom:7px}
+.kpi .label{color:var(--muted);font-size:12px}
+.toolbar{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin:20px 0 10px}
+.search{background:var(--panel);border:1px solid var(--line);border-radius:7px;padding:9px 12px;min-width:230px;flex:1}
+.control{display:flex;align-items:center;gap:7px;font-size:12px;color:var(--muted)}
+.rangebar{display:flex;align-items:center;gap:18px;background:var(--panel);border:1px solid var(--line);padding:10px 14px;border-radius:8px;margin-bottom:22px}
+.rangebar input{min-width:80px;width:140px;accent-color:var(--accent)}
+#range-label{font:12px ui-monospace,monospace;margin-left:auto}
+.breadcrumb{font-size:12px;color:var(--muted);display:flex;justify-content:space-between;margin-bottom:14px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(325px,1fr));gap:16px}
+.card{min-width:0;background:var(--panel);border:1px solid var(--line);border-radius:10px;box-shadow:var(--shadow);overflow:hidden}
+.card-head{padding:18px 18px 0;display:flex;justify-content:space-between;gap:8px}
+.card h3{font-size:14px;margin:0 0 5px;font-weight:600}
+.instance{font:11px ui-monospace,monospace;color:var(--muted);overflow-wrap:anywhere}
+.value{font:23px ui-monospace,monospace;white-space:nowrap;text-align:right}
+.unit{font-size:10px;color:var(--muted);text-align:right;margin-top:5px}
+.chart{height:200px;width:100%;display:block}
+.card-foot{padding:0 18px 14px;color:var(--muted);font-size:10px;line-height:1.7;overflow-wrap:anywhere}
+.reading{font:11px ui-monospace,monospace;height:20px;margin-top:3px;white-space:pre-wrap}
+.status{padding:12px 16px;margin:15px 0;border:1px solid #dfcc9c;background:#fff9e8;color:#766138;border-radius:8px;font-size:12px;line-height:1.8}
+.status summary{cursor:pointer}
+.dark .status{background:#2e291b;color:#dbca9a}
+.empty{padding:55px 25px;text-align:center;color:var(--muted);border:1px dashed var(--line);border-radius:10px;background:var(--panel);line-height:1.9}
+.pager{display:flex;gap:14px;align-items:center;justify-content:center;margin:26px}
+.missing{font-size:12px;color:var(--muted)}
+footer{margin-top:26px;padding-top:18px;border-top:1px solid var(--line);color:var(--muted);font-size:11px;line-height:1.8}
+dialog{background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:12px;padding:28px;max-width:620px;line-height:1.8}
+dialog::backdrop{background:#0006}
+code{font-size:12px}
+.about-close{float:right}
+noscript{display:block;padding:30px;color:#a00}
+@media(max-width:800px){.heading{flex-direction:column}
+.heading>div{width:100%}
+.layout{grid-template-columns:1fr}
+aside{height:auto;position:static;border:0;border-bottom:1px solid var(--line);padding:12px;display:flex;flex-wrap:wrap;gap:5px}
+.category{width:auto}
+.side-note,.side-title,aside .eyebrow{display:none}
+.main{padding:20px 14px}
+.kpis{grid-template-columns:repeat(2,1fr)}
+header{padding:0 14px}
+.brand span{display:none}
+.rangebar{flex-wrap:wrap}
+.grid{grid-template-columns:1fr}
+.badge{display:none}
+}
+
+</style></head><body>
+<header><div class="brand">AIPerf <span>/ SGLang observability</span></div><div class="nav"><span class="badge">EXPERIMENT SNAPSHOT</span><button id="about">about</button><button id="theme" aria-label="切换明暗主题">◐</button></div></header>
+<div class="layout"><aside><div class="eyebrow">Metric explorer</div><div class="side-title">实验监控</div><nav id="categories"></nav><div class="side-note">同一时间轴<br>P / D / Transfer / KV<br><br>仅显示采集到的数据。<br>不自动诊断瓶颈。<br>不跨 rank 求和。</div></aside>
+<main class="main"><div class="heading"><div><div class="eyebrow">Single experiment · metrics</div><h1 id="title"></h1><div id="subtitle"></div></div><button id="download">下载指标 JSON</button></div>
+<div class="kpis"><div class="kpi"><div class="n" id="duration"></div><div class="label">采集阶段跨度 · 秒</div></div><div class="kpi"><div class="n" id="endpoint-count"></div><div class="label">已观测 / 配置端点</div></div><div class="kpi"><div class="n" id="series-count"></div><div class="label">有趋势的指标序列</div></div><div class="kpi"><div class="n" id="phase-count"></div><div class="label">独立实验阶段</div></div></div>
+<details class="status" id="warnings"><summary id="warning-title"></summary><div id="warning-items"></div></details>
+<div class="toolbar"><input class="search" id="search" type="search" placeholder="搜索指标 / 实例 / rank…  /" aria-label="搜索指标"><select id="role" aria-label="角色"><option value="all">全部角色</option><option value="prefill">P · Prefill</option><option value="decode">D · Decode</option><option value="transfer">Transfer</option><option value="unknown">未映射</option></select><select id="phase" aria-label="实验阶段"></select><label class="control">统计<select id="stat"><option value="avg">Mean / Rate</option><option value="p50">P50（直方图）</option><option value="p95">P95（直方图）</option><option value="p99">P99（直方图）</option><option value="max">Max（Gauge）</option></select></label><label class="control">平滑<select id="smooth"><option value="0">关闭</option><option value="0.35">EMA 0.35</option></select></label><select id="scale" aria-label="纵轴"><option value="linear">linear</option><option value="log">log</option></select><select id="clock" aria-label="横轴时间"><option value="relative">相对秒</option><option value="utc">UTC 时间</option></select></div>
+<div class="rangebar"><label class="control">起点<input id="start" type="range" min="0" max="1000" value="0"></label><label class="control">终点<input id="end" type="range" min="0" max="1000" value="1000"></label><button id="reset">重置范围</button><span id="range-label"></span></div>
+<div class="breadcrumb"><span id="path"></span><span id="count"></span></div><div class="grid" id="grid"></div><div class="pager"><button id="prev">上一页</button><span id="page"></span><button id="next">下一页</button></div>
+<footer>数据口径：Gauge 为时间片统计；Counter 为区间速率；Histogram 为区间桶估计。空白表示未采集或不可计算，不代表零。<br>鼠标悬停联动时间轴；平滑仅作用于显示。页面完全离线，不依赖 CDN 或 Prometheus。</footer></main></div>
+<dialog id="info"><button class="about-close">关闭</button><h2>关于本报告</h2><p>这是 AIPerf 单次实验的 SGLang 指标快照，借鉴 MiMo 的分类导航与多指标趋势布局，并非 MiMo 官方页面。</p><p>传输阶段、缓存层级及 TP/DP rank 保留原始标签；不同来源未做求和，也没有平均分位数。Histogram 的 P95/P99 只是桶估计，落入 +Inf 桶时不输出伪精确值。</p><p>只展示完整位于阶段范围内的时间片，末尾部分时间片在悬停时标明。历史快照不查询在线系统。</p></dialog>
+<noscript>请启用 JavaScript 查看趋势图；同目录 metrics.json 可直接用于离线分析。</noscript>
+<script id="report-data" type="application/json">__REPORT_DATA__</script>
+<script>
+'use strict';
+const DATA=JSON.parse(document.getElementById('report-data').textContent);
+const $=id=>document.getElementById(id), groups={
+  all:'全部指标',prefill:'P · Prefill',decode:'D · Decode',transfer:'PD · Transfer',kvcache:'KV Cache',other:'其他指标'
+}
+;
+const state={
+  group:'all',page:0,hover:null
+}
+, size=24;
+const palette={
+  prefill:'#b57241',decode:'#487ba4',transfer:'#438877',unknown:'#7a8290'
+}
+;
+function fmt(v){
+  if(v===null||v===undefined||!Number.isFinite(v))return '—';
+  return new Intl.NumberFormat('en-US',{
+    maximumFractionDigits:3,notation:Math.abs(v)>=100000?'compact':'standard'
+  }
+  ).format(v)
+}
+function text(el,value){
+  el.textContent=String(value??'—')
+}
+function time(t){
+  return $('clock').value==='utc'&&DATA.origin_utc?new Date(Date.parse(DATA.origin_utc)+t*1000).toISOString().slice(11,23):fmt(t)+'s'
+}
+function bounds(){
+  return [Number($('start').value)/1000*DATA.duration_s,Number($('end').value)/1000*DATA.duration_s]
+}
+function value(p,s){
+  const key=$('stat').value;
+  if(['p50','p95','p99'].includes(key)&&s.type!=='histogram')return p.avg??null;
+  if(key==='max'&&s.type!=='gauge')return p.avg??null;
+  return p[key]??null
+}
+function filter(){
+  const q=$('search').value.toLowerCase();
+  return DATA.series.filter(s=>(state.group==='all'||s.group===state.group)&&($('role').value==='all'||s.role===$('role').value)&&($('phase').value==='all'||s.phase_id===$('phase').value)&&(!q||[s.title,s.metric,s.instance,JSON.stringify(s.labels)].join(' ').toLowerCase().includes(q)))
+}
+function draw(canvas,s,reading){
+  const rect=canvas.getBoundingClientRect(),dpr=window.devicePixelRatio||1;
+  canvas.width=rect.width*dpr;
+  canvas.height=rect.height*dpr;
+  const c=canvas.getContext('2d');
+  c.scale(dpr,dpr);
+  const W=rect.width,H=rect.height,L=54,R=W-18,T=20,B=H-32;
+  const [lo,hi]=bounds(),color=palette[s.role]||palette.unknown,css=getComputedStyle(document.body);
+  const ink=css.getPropertyValue('--muted').trim(),line=css.getPropertyValue('--line').trim();
+  text(reading,' ');
+  let prev=null,lastSmoothEnd=null;
+  const alpha=Number($('smooth').value),log=$('scale').value==='log';
+  const pts=s.points.filter(p=>p.end>=lo&&p.end<=hi).map(p=>{
+    if(lastSmoothEnd!==null&&p.start>lastSmoothEnd+1e-6)prev=null;
+    lastSmoothEnd=p.end;
+    let v=value(p,s);
+    if(v!==null&&alpha){
+      v=prev===null?v:alpha*v+(1-alpha)*prev;
+      prev=v
+    }
+    else if(v===null)prev=null;
+    return {
+      ...p,y:v
+    }
+  }
+  );
+  const values=pts.map(p=>p.y).filter(v=>v!==null&&(!log||v>0));
+  c.font='10px monospace';
+  c.strokeStyle=line;
+  c.fillStyle=ink;
+  if(!values.length){
+    c.fillText(s.points.length?'当前范围/统计无可用数据':'无时间片 · 请设置 --slice-duration',L,100);
+    return
+  }
+  let min=values.reduce((a,b)=>Math.min(a,b),Infinity),max=values.reduce((a,b)=>Math.max(a,b),-Infinity);
+  if(log){
+    min=Math.log10(min);
+    max=Math.log10(max)
+  }
+  else min=Math.min(0,min);
+  if(max===min)max=min+1;
+  const x=t=>L+(t-lo)/Math.max(hi-lo,1e-9)*(R-L),y=v=>B-((log?Math.log10(v):v)-min)/(max-min)*(B-T);
+  for(let i=0;
+  i<4;
+  i++){
+    const yy=T+(B-T)*i/3;
+    c.beginPath();
+    c.moveTo(L,yy);
+    c.lineTo(R,yy);
+    c.stroke();
+    const tick=max-(max-min)*i/3;
+    c.fillText(fmt(log?10**tick:tick),4,yy+3)
+  }
+  c.fillText(time(lo),L,H-10);
+  c.textAlign='right';
+  c.fillText(time(hi),R,H-10);
+  c.textAlign='left';
+  c.save();
+  c.beginPath();
+  c.rect(L,T,R-L,B-T);
+  c.clip();
+  c.strokeStyle=color;
+  c.lineWidth=1.7;
+  c.beginPath();
+  let open=false,lastEnd=null;
+  for(const p of pts){
+    if(p.y===null||(log&&p.y<=0)){
+      open=false;
+      continue
+    }
+    if(lastEnd!==null&&p.start>lastEnd+1e-6)open=false;
+    if(!open){
+      c.moveTo(x(p.end),y(p.y));
+      open=true
+    }
+    else c.lineTo(x(p.end),y(p.y));
+    lastEnd=p.end
+  }
+  c.stroke();
+  if(pts.length===1&&pts[0].y!==null&&(!log||pts[0].y>0)){
+    c.fillStyle=color;
+    c.beginPath();
+    c.arc(x(pts[0].end),y(pts[0].y),3,0,Math.PI*2);
+    c.fill()
+  }
+  if(state.hover!==null&&state.hover>=lo&&state.hover<=hi){
+    c.strokeStyle=ink;
+    c.lineWidth=.7;
+    c.setLineDash([3,3]);
+    c.beginPath();
+    c.moveTo(x(state.hover),T);
+    c.lineTo(x(state.hover),B);
+    c.stroke();
+    c.setLineDash([])
+  }
+  c.restore();
+  const hit=state.hover===null?null:s.points.find(p=>p.start<=state.hover&&p.end>=state.hover);
+  text(reading,hit?`${time(hit.start)}–${time(hit.end)} · ${fmt(value(hit,s))} ${s.unit}${hit.complete?'':' · 部分时间片'}`:' ');
+  canvas.onpointermove=e=>{
+    state.hover=lo+Math.max(0,Math.min(1,(e.offsetX-L)/(R-L)))*(hi-lo);
+    redraw()
+  }
+  ;
+  canvas.onpointerleave=()=>{
+    state.hover=null;
+    redraw()
+  }
+}
+let charts=[];
+function redraw(){
+  for(const o of charts)draw(o.canvas,o.s,o.reading)
+}
+function render(){
+  const rows=filter();
+  state.page=Math.min(state.page,Math.max(0,Math.ceil(rows.length/size)-1));
+  $('grid').replaceChildren();
+  charts=[];
+  text($('path'),'metrics / '+groups[state.group]);
+  text($('count'),rows.length+' series');
+  const [lo,hi]=bounds();
+  text($('range-label'),time(lo)+' — '+time(hi));
+  if(!rows.length){
+    const empty=document.createElement('div');
+    empty.className='empty';
+    text(empty,'没有匹配的指标。未采集到的数据不会以零值代替。');
+    $('grid').append(empty)
+  }
+  for(const s of rows.slice(state.page*size,(state.page+1)*size)){
+    const card=document.createElement('article');
+    card.className='card';
+    const head=document.createElement('div');
+    head.className='card-head';
+    const left=document.createElement('div'),right=document.createElement('div'),title=document.createElement('h3'),instance=document.createElement('div'),v=document.createElement('div'),u=document.createElement('div');
+    text(title,s.title);
+    instance.className='instance';
+    text(instance,s.instance+' · '+s.role);
+    v.className='value';
+    v.style.color=palette[s.role]||palette.unknown;
+    const last=s.points.filter(p=>p.end>=lo&&p.end<=hi).at(-1);
+    text(v,last?fmt(value(last,s)):'—');
+    u.className='unit';
+    text(u,s.unit+' · latest interval');
+    left.append(title,instance);
+    right.append(v,u);
+    head.append(left,right);
+    const canvas=document.createElement('canvas');
+    canvas.className='chart';
+    canvas.setAttribute('aria-label',s.title+' 趋势图');
+    const foot=document.createElement('div');
+    foot.className='card-foot';
+    const metric=document.createElement('div'),labels=document.createElement('div'),note=document.createElement('div'),reading=document.createElement('div');
+    text(metric,s.metric);
+    text(labels,JSON.stringify(s.labels));
+    text(note,s.note);
+    reading.className='reading';
+    foot.append(metric,labels,note,reading);
+    card.append(head,canvas,foot);
+    $('grid').append(card);
+    charts.push({
+      canvas,s,reading
+    }
+    )
+  }
+  text($('page'),`${state.page+1} / ${Math.max(1,Math.ceil(rows.length/size))}`);
+  $('prev').disabled=state.page===0;
+  $('next').disabled=(state.page+1)*size>=rows.length;
+  requestAnimationFrame(redraw);
+  document.querySelectorAll('.category').forEach(b=>b.classList.toggle('active',b.dataset.group===state.group))
+}
+text($('title'),DATA.title);
+text($('subtitle'),`Run ${DATA.benchmark_id||'unknown'} · ${DATA.origin_utc||'时间边界未知'} · Snapshot v${DATA.schema_version}`);
+text($('duration'),fmt(DATA.duration_s));
+text($('endpoint-count'),`${DATA.endpoints.filter(e=>e.status==='observed').length} / ${DATA.endpoints.length}`);
+text($('series-count'),DATA.series.filter(s=>s.points.length).length);
+text($('phase-count'),DATA.phases.length);
+for(const [key,label] of Object.entries(groups)){
+  const b=document.createElement('button');
+  b.className='category';
+  b.dataset.group=key;
+  const t=document.createElement('span'),n=document.createElement('small');
+  text(t,label);
+  text(n,DATA.series.filter(s=>key==='all'||s.group===key).length);
+  b.append(t,n);
+  b.onclick=()=>{
+    state.group=key;
+    state.page=0;
+    location.hash='metrics/'+key;
+    render()
+  }
+  ;
+  $('categories').append(b)
+}
+const notices=[...DATA.warnings,...DATA.endpoints.filter(e=>e.status==='missing').map(e=>'未观测端点: '+e.name),...DATA.missing_groups.map(g=>'缺少趋势分组: '+groups[g])];
+$('warnings').hidden=notices.length===0;
+text($('warning-title'),`${notices.length} 项数据完整性提示`);
+for(const item of notices){
+  const p=document.createElement('div');
+  text(p,item);
+  $('warning-items').append(p)
+}
+for(const p of [{
+  id:'all',name:'全部阶段（含预热）'
+}
+,...DATA.phases]){
+  const o=document.createElement('option');
+  o.value=p.id;
+  text(o,p.name);
+  $('phase').append(o)
+}
+const profile=DATA.phases.find(p=>p.kind==='profiling');
+$('phase').value=profile?profile.id:'all';
+for(const id of ['search','role','phase','stat','smooth','scale','clock'])$(id).addEventListener('input',()=>{
+  state.page=0;
+  render()
+}
+);
+for(const id of ['start','end'])$(id).addEventListener('input',()=>{
+  if(Number($('start').value)>=Number($('end').value)){
+    if(id==='start')$('start').value=Number($('end').value)-1;
+    else $('end').value=Number($('start').value)+1
+  }
+  render()
+}
+);
+$('reset').onclick=()=>{
+  $('start').value=0;
+  $('end').value=1000;
+  render()
+}
+;
+$('prev').onclick=()=>{
+  state.page--;
+  render()
+}
+;
+$('next').onclick=()=>{
+  state.page++;
+  render()
+}
+;
+$('theme').onclick=()=>{
+  document.body.classList.toggle('dark');
+  redraw()
+}
+;
+$('about').onclick=()=>$('info').showModal();
+document.querySelector('.about-close').onclick=()=>$('info').close();
+$('download').onclick=()=>{
+  const a=document.createElement('a'),url=URL.createObjectURL(new Blob([JSON.stringify(DATA,null,2)],{
+    type:'application/json'
+  }
+  ));
+  a.href=url;
+  a.download='sglang-metrics.json';
+  a.click();
+  setTimeout(()=>URL.revokeObjectURL(url),1000)
+}
+;
+document.addEventListener('keydown',e=>{
+  if(e.key==='/'&&e.target.tagName!=='INPUT'){
+    e.preventDefault();
+    $('search').focus()
+  }
+}
+);
+window.addEventListener('resize',redraw);
+const hash=location.hash.split('/').at(-1);
+if(groups[hash])state.group=hash;
+render();
+</script></body></html>

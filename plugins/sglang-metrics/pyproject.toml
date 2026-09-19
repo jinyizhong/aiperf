@@ -1,0 +1,36 @@
+# SPDX-License-Identifier: Apache-2.0
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "aiperf-sglang-metrics"
+version = "0.1.0"
+description = "Experiment-scoped SGLang P/D, transfer and KV-cache reports for AIPerf"
+requires-python = ">=3.11,<3.14"
+license = "Apache-2.0"
+readme = "README.md"
+dependencies = ["orjson>=3.10", "PyYAML>=6.0"]
+
+[project.entry-points."aiperf.plugins"]
+sglang-metrics = "aiperf_sglang_metrics:plugins.yaml"
+
+[project.scripts]
+aiperf-sglang-report = "aiperf_sglang_metrics.cli:main"
+
+[project.optional-dependencies]
+test = ["pytest>=8", "playwright>=1.49"]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+aiperf_sglang_metrics = ["plugins.yaml", "report.html"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra"
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"

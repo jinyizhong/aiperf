@@ -1,0 +1,8 @@
+# SPDX-License-Identifier: Apache-2.0
+schema_version: "1.0"
+data_exporter:
+  sglang_metrics_report:
+    class: aiperf_sglang_metrics.exporter:SGLangMetricsExporter
+    description: >-
+      Opt-in SGLang P/D, transfer and KV-cache snapshot and offline trend report.
+      Set AIPERF_SGLANG_METRICS_CONFIG to enable. Requires --slice-duration for trends.
